@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import dev.aoqia.leaf.filament.FilamentExtension;
 import dev.aoqia.leaf.filament.FilamentGradlePlugin;
 import dev.aoqia.leaf.loom.configuration.providers.zomboid.VersionsManifest;
-import dev.aoqia.leaf.loom.configuration.providers.zomboid.ZomboidVersionManifest;
+import dev.aoqia.leaf.loom.configuration.providers.zomboid.ZomboidVersionMeta;
 import dev.aoqia.leaf.loom.util.download.Download;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -18,7 +18,7 @@ public abstract class ZomboidVersionMetaHelper {
     public ZomboidVersionMetaHelper(FilamentExtension extension) {
         // Use the Zomboid version as an input to ensure the task re-runs on upgrade
         getZomboidVersion().set(extension.getZomboidVersion());
-        getZomboidVersionManifestUrl().set(extension.getZomboidVersionManifestUrl());
+        getZomboidVersionMetaUrl().set(extension.getZomboidVersionMetaUrl());
 
         getVersionManifestFile().set(extension.getZomboidFile("version_manifest.json"));
         getVersionMetadataFile().set(extension.getZomboidFile("dummy.file"));
@@ -26,13 +26,13 @@ public abstract class ZomboidVersionMetaHelper {
 
     public abstract Property<String> getZomboidVersion();
 
-    public abstract Property<String> getZomboidVersionManifestUrl();
+    public abstract Property<String> getZomboidVersionMetaUrl();
 
     public abstract RegularFileProperty getVersionManifestFile();
 
     public abstract RegularFileProperty getVersionMetadataFile();
 
-    public ZomboidVersionManifest setup() throws IOException, URISyntaxException {
+    public ZomboidVersionMeta setup() throws IOException, URISyntaxException {
         // Only needed to access it at setup time because for whatever reason, getZomboidVersion
         final String zomboidVersion = getVersionMetadataFile().getAsFile().get().getParent();
 
@@ -43,7 +43,7 @@ public abstract class ZomboidVersionMetaHelper {
             .getParent()
             .resolve(getZomboidVersion().get() + ".json");
 
-        final String versionManifestRaw = Download.create(getZomboidVersionManifestUrl().get())
+        final String versionManifestRaw = Download.create(getZomboidVersionMetaUrl().get())
             .defaultCache()
             .downloadString(versionManifestPath);
 
@@ -63,6 +63,6 @@ public abstract class ZomboidVersionMetaHelper {
             .sha1(version.sha1)
             .downloadString(versionMetadataPath);
 
-        return FilamentGradlePlugin.GSON.fromJson(versionMetadata, ZomboidVersionManifest.class);
+        return FilamentGradlePlugin.GSON.fromJson(versionMetadata, ZomboidVersionMeta.class);
     }
 }

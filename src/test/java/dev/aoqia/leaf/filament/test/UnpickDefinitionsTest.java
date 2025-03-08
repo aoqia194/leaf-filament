@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 class UnpickDefinitionsTest extends ProjectTest {
 	@Test
-	void remapUnpickDefinitionsIntermediary() throws IOException {
+	void remapUnpickDefinitions() throws IOException {
 		setupProject(
 				"unpickDef",
 				"unpick-definitions/screen_handler_slot_ids.unpick",
@@ -23,12 +23,10 @@ class UnpickDefinitionsTest extends ProjectTest {
 		BuildResult result = GradleRunner.create()
 				.withPluginClasspath()
 				.withProjectDir(projectDirectory)
-				.withArguments("remapUnpickDefinitionsIntermediary")
+				.withArguments("remapUnpickDefinitions")
 				.build();
 
 		assertThat(result.task(":combineUnpickDefinitions").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.task(":remapUnpickDefinitionsIntermediary").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(new File(projectDirectory, "combined_definitions.unpick")).exists().hasContent(getProjectFileText("unpickDef", "expected_named.unpick"));
-		assertThat(new File(projectDirectory, "intermediary_definitions.unpick")).exists().hasContent(getProjectFileText("unpickDef", "expected_intermediary.unpick"));
 	}
 }
