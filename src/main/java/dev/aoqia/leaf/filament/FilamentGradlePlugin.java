@@ -4,11 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.aoqia.leaf.filament.task.*;
 import dev.aoqia.leaf.filament.task.base.WithFileOutput;
-import dev.aoqia.leaf.loom.configuration.providers.zomboid.ZomboidVersionManifest;
+import dev.aoqia.leaf.loom.LoomGradlePlugin;
+import dev.aoqia.leaf.loom.configuration.providers.zomboid.ZomboidVersionMeta;
 import dev.aoqia.leaf.loom.util.gradle.GradleUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.UnknownConfigurationException;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
@@ -56,18 +59,23 @@ public final class FilamentGradlePlugin implements Plugin<Project> {
             Delete.class, task -> task.delete(extension.getCacheDirectory()));
         tasks.named("clean", task -> task.dependsOn(cleanFilament));
 
-        //        var zomboidLibraries = project.getConfigurations().register("zomboidLibraries");
-        var zomboidLibraries = project.getConfigurations().getByName("zomboidLibraries");
-        GradleUtils.afterSuccessfulEvaluation(project, () -> {
-            var name = zomboidLibraries.getName();
-            for (Dependency dependency : getDependencies(metaProvider.get(),
-                project.getDependencies())) {
-                project.getDependencies().add(name, dependency);
-            }
-        });
+        try {
+            var zomboidLibraries = project.getConfigurations().getByName("zomboidLibraries");
+
+            GradleUtils.afterSuccessfulEvaluation(project, () -> {
+                var name = zomboidLibraries.getName();
+                for (Dependency dependency : getDependencies(metaProvider.get(),
+                    project.getDependencies())) {
+                    project.getDependencies().add(name, dependency);
+                }
+            });
+        } catch (UnknownConfigurationException e) {
+
+            throw new RuntimeException("zomboidLibraries loom configuration not found.");
+        }
     }
 
-    private Dependency[] getDependencies(ZomboidVersionManifest meta,
+    private Dependency[] getDependencies(ZomboidVersionMeta meta,
         DependencyHandler dependencyHandler) {
         return meta.libraries().stream()
             .filter(library -> library.artifact() != null)
