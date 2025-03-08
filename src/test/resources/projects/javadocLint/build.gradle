@@ -1,10 +1,22 @@
 plugins {
 	id 'java'
-	id 'dev.aoqia.filament'
+    id 'dev.aoqia.leaf.loom' version '0.1.1'
+	id 'dev.aoqia.leaf.filament'
 }
 
+loom {
+    clientOnlyZomboidJar()
+}
+
+var zomboidVer = "41.78.16"
+
 filament {
-	minecraftVersion = "1.19.2"
+	zomboidVersion = zomboidVer
+}
+
+dependencies {
+    // Dummy zomboid dependency to ensure generation of game files n stuff from loom.
+    zomboid "com.theindiestone:zomboid:${zomboidVer}"
 }
 
 javadocLint {

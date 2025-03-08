@@ -1,10 +1,10 @@
 plugins {
 	id 'java'
-	id 'dev.aoqia.filament'
+	id 'dev.aoqia.leaf.filament'
 }
 
 filament {
-	minecraftVersion = "1.19.2"
+	zomboidVersion = "41.78.16"
 }
 
 combineUnpickDefinitions {
@@ -12,7 +12,7 @@ combineUnpickDefinitions {
 	output = file('combined_definitions.unpick')
 }
 
-remapUnpickDefinitionsIntermediary {
-	output = file('intermediary_definitions.unpick')
-	mappings = file('yarn-mappings-v2.tiny')
-}
+//remapUnpickDefinitionsIntermediary {
+//	output = file('intermediary_definitions.unpick')
+//	mappings = file('yarn-mappings-v2.tiny')
+//}
