@@ -1,67 +1,72 @@
-import org.gradle.util.GradleVersion
+import groovy.xml.XmlSlurper
+import groovy.xml.slurpersupport.GPathResult
+import groovy.xml.slurpersupport.NodeChildren
+import org.jreleaser.model.*
+import java.net.URI
+
+val env = System.getenv()!!
+val isCiEnv = env["CI"].toBoolean()
+val gpgKeyPassphrase = env["GPG_PASSPHRASE_KEY"]
+val gpgKeyPublic = env["GPG_PUBLIC_KEY"]
+val gpgKeyPrivate = env["GPG_PRIVATE_KEY"]
+val mavenUsername = env["MAVEN_USERNAME"]
+val mavenPassword = env["MAVEN_PASSWORD"]
+
+if (!isCiEnv) {
+    version = "${version}.local"
+}
 
 buildscript {
     repositories {
         maven {
-            name "Fabric Repository"
-            url 'https://maven.fabricmc.net'
+            name = "Fabric"
+            url = uri("https://maven.fabricmc.net/")
         }
         mavenCentral()
     }
+
     dependencies {
-        classpath "cuchaz:enigma-cli:${project.enigma_version}"
+        classpath(libs.enigma.cli)
     }
 }
 
 plugins {
-	id 'java-library'
-    id 'com.diffplug.spotless' version '6.21.0'
-	// id 'checkstyle'
-    // Publishing to Maven Central
-    id 'org.jreleaser' version '1.17.0'
-    id 'maven-publish'
-    id 'com.gradle.plugin-publish' version '1.3.1'
-}
+	`java-library`
+    `maven-publish`
 
-def ENV = System.getenv()
-if (!ENV.CI) {
-    version = "${version}.local"
+    alias(libs.plugins.spotless)
+
+    alias(libs.plugins.jreleaser)
+    alias(libs.plugins.gradle.plugin.publish)
 }
 
 repositories {
 	maven {
-		name "Fabric Repository"
-		url 'https://maven.fabricmc.net'
+		name = "Fabric"
+		url = uri("https://maven.fabricmc.net/")
 	}
 	mavenCentral()
 }
 
 dependencies {
-	implementation "org.ow2.asm:asm:${asm_version}"
-	implementation "org.ow2.asm:asm-tree:${asm_version}"
-	implementation "cuchaz:enigma:${enigma_version}"
-	implementation "cuchaz:enigma-cli:${enigma_version}"
-	implementation "net.fabricmc.unpick:unpick:${unpick_version}"
-	implementation "net.fabricmc.unpick:unpick-format-utils:${unpick_version}"
-	implementation "net.fabricmc.unpick:unpick-cli:${unpick_version}"
-	implementation "net.fabricmc:tiny-remapper:${tiny_remapper_version}"
-	implementation 'net.fabricmc:mapping-io:0.6.1'
-	implementation 'net.fabricmc:javapoet:0.1.1'
+    implementation(libs.bundles.asm)
+    implementation(libs.bundles.enigma)
+    implementation(libs.bundles.unpick)
+
+    implementation(libs.javapoet)
+    implementation(libs.mappingio)
+    implementation(libs.tinyremapper)
 
     // Contains a number of useful utilities we can re-use.
-    implementation ("${project.group}:loom:${loom_version}") {
-        transitive = false
+    implementation(libs.loom) {
+        isTransitive = false
     }
 
-	testImplementation platform("org.junit:junit-bom:${junit_version}")
-	testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testImplementation "org.assertj:assertj-core:${assertj_version}"
-}
+    testImplementation(libs.assertj.core)
 
-tasks.withType(JavaCompile).configureEach {
-	options.encoding = "UTF-8"
-	options.release = 17
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 java {
@@ -69,72 +74,93 @@ java {
     withJavadocJar()
 }
 
-test {
-	useJUnitPlatform()
+tasks {
+    test {
+        useJUnitPlatform()
+    }
 }
 
-//checkstyle {
-//	configFile = file('checkstyle.xml')
-//	toolVersion = '10.13.0'
-//}
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
+    options.release = 17
+}
 
-// Workaround https://github.com/gradle/gradle/issues/27035
-//configurations.checkstyle {
-//	resolutionStrategy.capabilitiesResolution.withCapability("com.google.
-//	collections:google-collections") {
-//		select("com.google.guava:guava:0")
-//	}
-//}
+/*
+ * A task to ensure that the version being released has not already been released.
+ */
+val checkVersion by tasks.registering {
+    doFirst {
+        val xml = URI(
+            "https://repo.maven.apache.org/maven2/${
+                rootProject.group.toString().replace(".", "/")
+            }/${rootProject.name}/maven-metadata.xml"
+        ).toURL().readText()
+        val metadata = XmlSlurper().parseText(xml)
+
+        val versioning = metadata.getProperty("versioning") as GPathResult
+        val versions = versioning.getProperty("versions") as GPathResult
+        val versionText = (versions.getProperty("version") as NodeChildren).map { it.toString() }
+
+        if (versionText.contains(version)) {
+            throw RuntimeException("$version has already been released!")
+        }
+    }
+}
 
 gradlePlugin {
-    website = project.url
-    vcsUrl = project.url
+    website = property("url").toString()
+    vcsUrl = property("url").toString()
 
 	plugins {
-		filament {
-			id = "${project.group}.${project.name}"
-            displayName = project.name
-            description = project.description
-            tags.set(['projectzomboid', 'zomboid', 'leaf'])
-			implementationClass = "${project.group}.${project.name}.FilamentGradlePlugin"
+		create("filament") {
+			id = "${rootProject.group}.${rootProject.name}"
+            displayName = rootProject.name
+            tags = (listOf("projectzomboid", "zomboid", "leaf"))
+			implementationClass = "${rootProject.group}.${rootProject.name}.FilamentGradlePlugin"
 		}
 	}
 }
 
 publishing {
-    publications.withType(MavenPublication).configureEach {
+    publications.withType<MavenPublication>().configureEach {
         pom {
-            name = project.name
-            group = project.group
-            description = project.description
-            url = project.url
-            inceptionYear = '2025'
+            name = rootProject.name
+            group = rootProject.group
+            description = rootProject.description
+            url = property("url").toString()
+            inceptionYear = "2025"
+
             developers {
                 developer {
-                    id = 'aoqia'
-                    name = 'aoqia'
+                    id = "aoqia"
+                    name = "aoqia"
                 }
             }
+
             issueManagement {
-                system = 'GitHub'
-                url = "${project.url}/issues"
+                system = "GitHub"
+                url = "${property("url").toString()}/issues"
             }
+
             licenses {
                 license {
-                    name = 'CC0-1.0'
-                    url = 'https://spdx.org/licenses/CC0-1.0.html'
+                    name = "CC0-1.0"
+                    url = "https://spdx.org/licenses/CC0-1.0.html"
                 }
             }
+
             scm {
-                connection = "scm:git:https://github.com/aoqia194/" + project.name + "/.git"
-                developerConnection = "scm:git:ssh://github.com/aoqia194/" + project.name + "/.git"
-                url = project.url
+                connection = "scm:git:${property("url").toString()}.git"
+                developerConnection =
+                    "scm:git:${property("url").toString().replace("https", "ssh")}.git"
+                url = property("url").toString()
             }
         }
     }
+
     repositories {
         maven {
-            url = layout.buildDirectory.dir("staging-deploy")
+            url = uri(layout.buildDirectory.dir("staging-deploy"))
         }
     }
 }
@@ -142,24 +168,27 @@ publishing {
 jreleaser {
     project {
         name = rootProject.name
-        version = rootProject.version
-        versionPattern = 'SEMVER'
-        authors = ['aoqia194', 'FabricMC']
-        maintainers = ['aoqia194']
-        license = 'CC0-1.0'
-        inceptionYear = '2025'
+        version = rootProject.version.toString()
+        versionPattern = "SEMVER"
+        authors = listOf("aoqia194", "FabricMC")
+        maintainers = listOf("aoqia194")
+        license = "CC0-1.0"
+        inceptionYear = "2025"
+
         links {
-            homepage = rootProject.url
-            license = 'https://spdx.org/licenses/MIT.html'
+            homepage = property("url").toString()
+            license = "https://spdx.org/licenses/MIT.html"
         }
     }
+
     signing {
-        active = 'ALWAYS'
+        active = Active.ALWAYS
         armored = true
-        passphrase = ENV.GPG_PASSPHRASE_KEY
-        publicKey = ENV.GPG_PUBLIC_KEY
-        secretKey = ENV.GPG_PRIVATE_KEY
+        passphrase = gpgKeyPassphrase
+        publicKey = gpgKeyPublic
+        secretKey = gpgKeyPrivate
     }
+
     deploy {
         maven {
             pomchecker {
@@ -168,18 +197,19 @@ jreleaser {
                 failOnError = true
                 strict = true
             }
+
             mavenCentral {
-                sonatype {
+                create("sonatype") {
                     applyMavenCentralRules = true
-                    active = "ALWAYS"
+                    active = Active.ALWAYS
                     snapshotSupported = true
-                    authorization = 'BEARER'
-                    username = ENV.MAVEN_USERNAME
-                    password = ENV.MAVEN_PASSWORD
+                    authorization = Http.Authorization.BEARER
+                    username = mavenUsername
+                    password = mavenPassword
                     url = "https://central.sonatype.com/api/v1/publisher"
                     stagingRepository("build/staging-deploy")
                     verifyUrl = "https://repo1.maven.org/maven2/{{path}}/{{filename}}"
-                    namespace = rootProject.group
+                    namespace = rootProject.group.toString()
                     retryDelay = 60
                     maxRetries = 30
 
@@ -200,46 +230,23 @@ jreleaser {
     release {
         github {
             enabled = true
-            repoOwner = 'aoqia194'
-            name = 'leaf-filament'
-            host = 'github.com'
-            releaseName = '{{tagName}}'
+            repoOwner = "aoqia194"
+            name = "leaf-${rootProject.name}"
+            host = "github.com"
+            releaseName = "{{tagName}}"
+
             sign = true
             overwrite = true
+            uploadAssets = Active.ALWAYS
+            artifacts = true
+            checksums = true
+            signatures = true
 
             changelog {
-                formatted = 'ALWAYS'
-                preset = 'conventional-commits'
-
-                append {
-                    enabled = true
-                }
-
-                extraProperties.put('categorizeScopes', 'true')
+                formatted = Active.ALWAYS
+                preset = "conventional-commits"
+                extraProperties.put("categorizeScopes", "true")
             }
         }
     }
-}
-
-/**
- * Run this task to download the gradle sources next to the api jar, you may need to manually
- * attach the sources jar
- */
-tasks.register('downloadGradleSources') {
-	doLast {
-		// Awful hack to find the gradle api location
-		def gradleApiFile = project.configurations.detachedConfiguration(dependencies.gradleApi())
-            .files.stream()
-			.filter {
-				it.name.startsWith("gradle-api")
-			}.findFirst().orElseThrow()
-
-		def gradleApiSources = new File(gradleApiFile.absolutePath.replace(".jar", "-sources.jar"))
-		def url = "https://services.gradle.org/distributions/gradle-${GradleVersion.current().getVersion()}-src.zip"
-
-		gradleApiSources.delete()
-
-		println("Downloading (${url}) to (${gradleApiSources})")
-		gradleApiSources << new URL(url).newInputStream()
-	}
 }
