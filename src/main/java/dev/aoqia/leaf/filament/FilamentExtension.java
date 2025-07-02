@@ -20,7 +20,7 @@ public abstract class FilamentExtension {
     @Inject
     public FilamentExtension() {
         getZomboidVersion().finalizeValueOnRead();
-        getZomboidVersionMetaUrl().convention(MirrorUtil.getClientVersionManifests(getProject()))
+        getZomboidVersionMetaUrl().convention(MirrorUtil.getClientVersionManifestUrl(getProject()))
             .finalizeValueOnRead();
 
         metaHelper = getProject().getObjects().newInstance(ZomboidVersionMetaHelper.class, this);
