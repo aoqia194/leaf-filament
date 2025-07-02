@@ -1,0 +1,45 @@
+[versions]
+
+asm = "9.8"
+assertj = "3.26.3"
+enigma = "2.5.2"
+gradle-plugin-publish = "1.3.1"
+javapoet = "0.1.1"
+jreleaser = "1.17.0"
+junit = "5.11.0"
+loom = "0.5.1"
+mappingio = "0.6.1"
+spotless = "6.21.0"
+tinyremapper = "0.10.4"
+unpick = "2.3.0"
+
+[libraries]
+
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+enigma = { module = "cuchaz:enigma", version.ref = "enigma" }
+enigma-cli = { module = "cuchaz:enigma-cli", version.ref = "enigma" }
+javapoet = { module = "net.fabricmc:javapoet", version.ref = "javapoet" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+loom = { module = "dev.aoqia.leaf:loom", version.ref = "loom" }
+mappingio = { module = "net.fabricmc:mapping-io", version.ref = "mappingio" }
+tinyremapper = { module = "net.fabricmc:tiny-remapper", version.ref = "tinyremapper" }
+unpick = { module = "net.fabricmc.unpick:unpick", version.ref = "unpick" }
+unpick-cli = { module = "net.fabricmc.unpick:unpick-cli", version.ref = "unpick" }
+unpick-format-utils = { module = "net.fabricmc.unpick:unpick-format-utils", version.ref = "unpick" }
+
+[bundles]
+
+asm = ["asm", "asm-tree"]
+enigma = ["enigma", "enigma-cli"]
+unpick = ["unpick", "unpick-cli", "unpick-format-utils"]
+
+[plugins]
+
+gradle-plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "gradle-plugin-publish" }
+jreleaser = { id = "org.jreleaser", version.ref = "jreleaser" }
+loom = { id = "dev.aoqia.leaf.loom", version.ref = "loom" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

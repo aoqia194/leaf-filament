@@ -1,25 +1,25 @@
-.gradle
-**/build/
-!src/**/build/
+# Make gitignore act in whitelist mode.
+/*
 
-# Ignore entire pesky .idea folder
-.idea
+# Root folders.
+!/gradle
+!/buildSrc
+!/src
+!/.github
 
-# Ignore Gradle GUI config
-gradle-app.setting
-# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
-!gradle-wrapper.jar
-# Avoid ignore Gradle wrappper properties
-!gradle-wrapper.properties
-# Cache of project
-.gradletasknamecache
+# Root files.
+!/.editorconfig
+!/.gitattributes
+!/.gitignore
+!/build.gradle.kts
+!/checkstyle.xml
+!/gradle.properties
+!/gradlew
+!/gradlew.bat
+!/HEADER
+!/LICENSE
+!/MAINTAINERS
+!/settings.gradle.kts
 
-# Eclipse Gradle plugin generated files
-# Eclipse Core
-.project
-# JDT-specific (Eclipse Java Development Tools)
-.classpath
-
-# JetBrains IDEA stuff
-*.iml
-*.ipr
+# Documentation files.
+!/**/*.md
